@@ -13,6 +13,8 @@ import com.cricbuzz.news.repository.NewsRepository;
 import com.cricbuzz.news.repository.TagRepository;
 import com.cricbuzz.news.repository.UserRepository;
 import com.cricbuzz.news.service.NewsService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,6 +28,8 @@ import java.util.stream.Collectors;
 @Service
 public class NewsServiceImpl implements NewsService {
 
+    private static final Logger logger = LoggerFactory.getLogger(NewsServiceImpl.class);
+
     @Autowired
     private NewsRepository newsRepository;
 
@@ -37,18 +41,30 @@ public class NewsServiceImpl implements NewsService {
 
     @Override
     public NewsResponseDTO createNews(NewsRequestDTO newsRequestDTO) {
-        User author = userRepository.findById(newsRequestDTO.getAuthorId())
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", newsRequestDTO.getAuthorId()));
+        logger.info("Creating news with title: {}", newsRequestDTO.getTitle());
+        try {
+            User author = userRepository.findById(newsRequestDTO.getAuthorId())
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", newsRequestDTO.getAuthorId()));
 
-        Tag tag = tagRepository.findByName(newsRequestDTO.getTagName())
-                .orElseThrow(() -> new ResourceNotFoundException("Tag", "name", newsRequestDTO.getTagName()));
+            Tag tag = tagRepository.findByName(newsRequestDTO.getTagName())
+                    .orElseThrow(() -> new ResourceNotFoundException("Tag", "name", newsRequestDTO.getTagName()));
 
-        News news = NewsMapper.toEntity(newsRequestDTO, author, tag);
-        News savedNews = newsRepository.save(news);
-        return NewsMapper.toResponseDto(savedNews);
+            News news = NewsMapper.toEntity(newsRequestDTO, author, tag);
+            News savedNews = newsRepository.save(news);
+            logger.info("News created successfully with ID: {}", savedNews.getId());
+            return NewsMapper.toResponseDto(savedNews);
+        } catch (ResourceNotFoundException e) {
+            logger.error("Error creating news: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            logger.error("Unexpected error creating news: {}", e.getMessage());
+            throw new RuntimeException("Unexpected error occurred while creating news", e);
+        }
     }
 
+    @Override
     public PageableResponse<NewsResponseDTO> getNewsByTag(String tag, int page, int size) {
+        logger.info("Fetching news with tag: {}", tag);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, AppConstants.SORT_BY));
         Page<News> newsPage = newsRepository.findByTag_Name(tag, pageable);
 
@@ -56,11 +72,13 @@ public class NewsServiceImpl implements NewsService {
                 .map(NewsMapper::toResponseDto)
                 .collect(Collectors.toList());
 
+        logger.info("Fetched {} news articles with tag: {}", newsPage.getTotalElements(), tag);
         return new PageableResponse<>(content, newsPage.getNumber(), newsPage.getSize(), newsPage.getTotalElements(), newsPage.getTotalPages(), newsPage.isLast());
     }
 
     @Override
     public PageableResponse<NewsResponseDTO> getAllNews(int page, int size) {
+        logger.info("Fetching all news with pagination - page: {}, size: {}", page, size);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, AppConstants.SORT_BY));
         Page<News> newsPage = newsRepository.findByIsNewsDeletedFalse(pageable);
 
@@ -68,6 +86,7 @@ public class NewsServiceImpl implements NewsService {
                 .map(NewsMapper::toResponseDto)
                 .collect(Collectors.toList());
 
+        logger.info("Fetched {} news articles", newsPage.getTotalElements());
         return new PageableResponse<>(content, newsPage.getNumber(), newsPage.getSize(), newsPage.getTotalElements(), newsPage.getTotalPages(), newsPage.isLast());
     }
 }

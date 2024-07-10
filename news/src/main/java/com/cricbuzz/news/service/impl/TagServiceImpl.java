@@ -7,17 +7,28 @@ import com.cricbuzz.news.repository.TagRepository;
 import com.cricbuzz.news.service.TagService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class TagServiceImpl implements TagService {
+
+    private static final Logger logger = LoggerFactory.getLogger(TagServiceImpl.class);
 
     @Autowired
     private TagRepository tagRepository;
 
     @Override
     public TagDTO addTag(TagDTO tagDTO) {
-        Tag tag = TagMapper.toEntity(tagDTO);
-        Tag savedTag = tagRepository.save(tag);
-        return TagMapper.toDTO(savedTag);
+        logger.info("Adding tag with name: {}", tagDTO.getName());
+        try {
+            Tag tag = TagMapper.toEntity(tagDTO);
+            Tag savedTag = tagRepository.save(tag);
+            logger.info("Tag added successfully with ID: {}", savedTag.getId());
+            return TagMapper.toDTO(savedTag);
+        } catch (Exception e) {
+            logger.error("Error adding tag: {}", e.getMessage());
+            throw new RuntimeException("Unexpected error occurred while adding tag", e);
+        }
     }
 }
