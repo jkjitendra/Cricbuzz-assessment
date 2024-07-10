@@ -20,25 +20,31 @@ public class UserController {
     private UserService userService;
 
     @PostMapping("/")
-    public ResponseEntity<UserResponseDTO> createUser(@Valid @RequestBody UserRequestDTO userRequestBody) {
+    public ResponseEntity<APIResponse<UserResponseDTO>> createUser(@Valid @RequestBody UserRequestDTO userRequestBody) {
         UserResponseDTO createdUserRequestBody = this.userService.createUser(userRequestBody);
-        return new ResponseEntity<>(createdUserRequestBody, HttpStatus.CREATED);
+        APIResponse<UserResponseDTO> response = new APIResponse<>(true, "User created successfully", createdUserRequestBody);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @GetMapping("/")
-    public ResponseEntity<List<UserResponseDTO>> getAllUser() {
-        return ResponseEntity.ok(this.userService.getAllUsers());
+    public ResponseEntity<APIResponse<List<UserResponseDTO>>> getAllUsers() {
+        List<UserResponseDTO> users = this.userService.getAllUsers();
+        APIResponse<List<UserResponseDTO>> response = new APIResponse<>(true, "Users fetched successfully", users);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<UserResponseDTO> getUser(@PathVariable Long userId) {
-        return ResponseEntity.ok(this.userService.getUserById(userId));
+    public ResponseEntity<APIResponse<UserResponseDTO>> getUser(@PathVariable Long userId) {
+        UserResponseDTO user = this.userService.getUserById(userId);
+        APIResponse<UserResponseDTO> response = new APIResponse<>(true, "User fetched successfully", user);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{userId}")
-    public ResponseEntity<APIResponse> deleteUser(@PathVariable("userId") Long uId) {
+    public ResponseEntity<APIResponse<Void>> deleteUser(@PathVariable("userId") Long uId) {
         this.userService.deleteUser(uId);
-        return new ResponseEntity<>(new APIResponse(true, "User Deleted Successfully"), HttpStatus.NO_CONTENT);
+        APIResponse<Void> response = new APIResponse<>(true, "User deleted successfully");
+        return new ResponseEntity<>(response, HttpStatus.NO_CONTENT);
     }
 
 }

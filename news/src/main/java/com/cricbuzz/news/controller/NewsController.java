@@ -11,6 +11,7 @@ import com.cricbuzz.news.service.FileStorageService;
 import com.cricbuzz.news.service.NewsService;
 import com.cricbuzz.news.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -39,10 +40,10 @@ public class NewsController {
     @PostMapping(value = "/user/{userId}/news", consumes =  MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<APIResponse<NewsResponseDTO>> createNews(
             @PathVariable Long userId,
-            @RequestPart("news") String newsJson,
+            @RequestPart("news") @Valid String newsJson,
             @RequestPart("image") MultipartFile image
     ) throws IOException{
-        userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("News", "authorId", userId));
+        userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User", "userId", userId));
         NewsRequestDTO newsRequestDTO = new ObjectMapper().readValue(newsJson, NewsRequestDTO.class);
         if (image != null && !image.isEmpty()) {
             String filePath = fileStorageService.storeFile(image);
@@ -56,18 +57,18 @@ public class NewsController {
     @GetMapping("/tag")
     public ResponseEntity<APIResponse<PageableResponse<NewsResponseDTO>>> getNewsByTag(
             @RequestParam String tag,
-            @RequestParam int page,
-            @RequestParam int size
+            @RequestParam(value = "pageNumber", defaultValue = AppConstants.PAGE_NUMBER, required = false) int pageNumber,
+            @RequestParam(value = "pageSize", defaultValue = AppConstants.PAGE_SIZE, required = false) int pageSize
     ) {
-        PageableResponse<NewsResponseDTO> pageableResponse = newsService.getNewsByTag(tag, page, size);
+        PageableResponse<NewsResponseDTO> pageableResponse = newsService.getNewsByTag(tag, pageNumber, pageSize);
         APIResponse<PageableResponse<NewsResponseDTO>> response = new APIResponse<>(true, "News fetched successfully", pageableResponse);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @GetMapping("/")
     public ResponseEntity<APIResponse<PageableResponse<NewsResponseDTO>>> getAllNews(
-            @RequestParam(value = "pageNumber", defaultValue = AppConstants.PAGE_NUMBER, required = false) Integer pageNumber,
-            @RequestParam(value = "pageSize", defaultValue = AppConstants.PAGE_SIZE, required = false) Integer pageSize
+            @RequestParam(value = "pageNumber", defaultValue = AppConstants.PAGE_NUMBER, required = false) int pageNumber,
+            @RequestParam(value = "pageSize", defaultValue = AppConstants.PAGE_SIZE, required = false) int pageSize
     ) {
         PageableResponse<NewsResponseDTO> pageableResponse = newsService.getAllNews(pageNumber, pageSize);
         APIResponse<PageableResponse<NewsResponseDTO>> response = new APIResponse<>(true, "News fetched successfully", pageableResponse);

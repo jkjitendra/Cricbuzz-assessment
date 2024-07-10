@@ -4,8 +4,6 @@ import com.cricbuzz.news.dto.NewsRequestDTO;
 import com.cricbuzz.news.dto.NewsResponseDTO;
 import com.cricbuzz.news.dto.PageableResponse;
 
-import java.util.List;
-
 public interface NewsService {
 
     NewsResponseDTO createNews(NewsRequestDTO news);
