@@ -12,6 +12,7 @@ import com.cricbuzz.news.exception.ResourceNotFoundException;
 import com.cricbuzz.news.repository.NewsRepository;
 import com.cricbuzz.news.repository.TagRepository;
 import com.cricbuzz.news.repository.UserRepository;
+import com.cricbuzz.news.service.FileStorageService;
 import com.cricbuzz.news.service.NewsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,17 +32,21 @@ public class NewsServiceImpl implements NewsService {
 
     private static final Logger logger = LoggerFactory.getLogger(NewsServiceImpl.class);
 
-    @Autowired
-    private NewsRepository newsRepository;
+    private final NewsRepository newsRepository;
+    private final UserRepository userRepository;
+    private final TagRepository tagRepository;
+    private final FileStorageService fileStorageService;
 
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private TagRepository tagRepository;
+    public NewsServiceImpl(NewsRepository newsRepository, UserRepository userRepository, TagRepository tagRepository, FileStorageService fileStorageService) {
+        this.newsRepository = newsRepository;
+        this.userRepository = userRepository;
+        this.tagRepository = tagRepository;
+        this.fileStorageService = fileStorageService;
+    }
 
     @Override
-    public NewsResponseDTO createNews(NewsRequestDTO newsRequestDTO) {
+    public NewsResponseDTO createNews(NewsRequestDTO newsRequestDTO, MultipartFile image) {
         logger.info("Creating news with title: {}", newsRequestDTO.getTitle());
         try {
             User author = userRepository.findById(newsRequestDTO.getAuthorId())
@@ -48,6 +54,11 @@ public class NewsServiceImpl implements NewsService {
 
             Tag tag = tagRepository.findByName(newsRequestDTO.getTagName())
                     .orElseThrow(() -> new ResourceNotFoundException("Tag", "name", newsRequestDTO.getTagName()));
+
+            if (image != null && !image.isEmpty()) {
+                String filePath = fileStorageService.storeFile(image);
+                newsRequestDTO.setImageUrl(filePath);
+            }
 
             News news = NewsMapper.toEntity(newsRequestDTO, author, tag);
             News savedNews = newsRepository.save(news);
