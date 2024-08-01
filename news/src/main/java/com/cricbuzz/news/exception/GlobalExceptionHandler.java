@@ -7,6 +7,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.util.HashMap;
@@ -51,6 +52,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<APIResponse<String>> handleNoHandlerFoundException(NoHandlerFoundException ex) {
         APIResponse<String> apiResponse = new APIResponse<>(false, "Endpoint not found: " + ex.getRequestURL());
         return new ResponseEntity<>(apiResponse, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<APIResponse<String>> handleMaxSizeException(MaxUploadSizeExceededException ex) {
+        APIResponse<String> apiResponse = new APIResponse<>(false, "File size exceeds the maximum allowed size.");
+        return new ResponseEntity<>(apiResponse, HttpStatus.EXPECTATION_FAILED);
     }
 
 }
