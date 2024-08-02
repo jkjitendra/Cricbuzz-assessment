@@ -22,6 +22,7 @@ public class News {
     private String heading;
     private String description;
     private String imageUrl;
+
     @ManyToOne
     @JoinColumn(name = "tag_id", nullable = false)
     private Tag tag;

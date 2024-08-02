@@ -15,8 +15,12 @@ public class TagServiceImpl implements TagService {
 
     private static final Logger logger = LoggerFactory.getLogger(TagServiceImpl.class);
 
+    private final TagRepository tagRepository;
+
     @Autowired
-    private TagRepository tagRepository;
+    public TagServiceImpl(TagRepository tagRepository) {
+        this.tagRepository = tagRepository;
+    }
 
     @Override
     public TagDTO addTag(TagDTO tagDTO) {
