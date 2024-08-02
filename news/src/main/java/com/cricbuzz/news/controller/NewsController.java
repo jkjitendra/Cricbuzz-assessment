@@ -25,31 +25,21 @@ import java.io.IOException;
 @RequestMapping("/api/v1/news")
 public class NewsController {
 
-    @Autowired
-    private NewsService newsService;
+    private final NewsService newsService;
 
     @Autowired
-    private FileStorageService fileStorageService;
+    public NewsController(NewsService newsService) {
+        this.newsService = newsService;
+    }
 
-    @Autowired
-    private UserService userService;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @PostMapping(value = "/user/{userId}/news", consumes =  MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/user/{userId}/news", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<APIResponse<NewsResponseDTO>> createNews(
             @PathVariable Long userId,
             @RequestPart("news") @Valid String newsJson,
-            @RequestPart("image") MultipartFile image
-    ) throws IOException{
-        userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User", "userId", userId));
+            @RequestPart(value = "image", required = false) MultipartFile image
+    ) throws IOException {
         NewsRequestDTO newsRequestDTO = new ObjectMapper().readValue(newsJson, NewsRequestDTO.class);
-        if (image != null && !image.isEmpty()) {
-            String filePath = fileStorageService.storeFile(image);
-            newsRequestDTO.setImageUrl(filePath);
-        }
-        NewsResponseDTO createdNewsResponseBody = newsService.createNews(newsRequestDTO);
+        NewsResponseDTO createdNewsResponseBody = newsService.createNews(newsRequestDTO, image);
         APIResponse<NewsResponseDTO> response = new APIResponse<>(true, "News created successfully", createdNewsResponseBody);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
@@ -67,6 +57,7 @@ public class NewsController {
 
     @GetMapping("/")
     public ResponseEntity<APIResponse<PageableResponse<NewsResponseDTO>>> getAllNews(
+
             @RequestParam(value = "pageNumber", defaultValue = AppConstants.PAGE_NUMBER, required = false) int pageNumber,
             @RequestParam(value = "pageSize", defaultValue = AppConstants.PAGE_SIZE, required = false) int pageSize
     ) {
